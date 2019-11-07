@@ -29,16 +29,14 @@
 
 */
 
-const schemesDb = require("./dbConfig")("schemes");
-
-const knex = require("knex");
+const schemesDb = require("./db-config");
 
 const find = () => {
-    return schemesDb.select("*");
+    return schemesDb.select("*").from("schemes");
 }
 
-const findById = _id => {
-    return schemesDb.select("*").where({id: _id}).first();
+const findById = id => {
+    return schemesDb.select("*").from("schemes").where({id: id}).first();
 }
 
 /*select scheme_name, step_number, instructions from steps
@@ -46,22 +44,37 @@ join schemes on steps.scheme_id = 5 and schemes.id = 5
 order by step_number*/
 
 const findSteps = id => {
-    console.log(schemesDb.select(knex.raw("?", "scheme_name"), "step_number", "instructions")
-    .from("steps")
-    .join("schemes", "steps.scheme_id", "=", "schemes.id")
-    .where({scheme_id: id})
-    .orderBy("steps.step_number").toSQL());
-
-    return schemesDb.select("scheme_name", "step_number", "instructions")
-    .from("steps")
+    return schemesDb("steps").select("scheme_name", "step_number", "instructions")
+    // .from("steps")
     .join("schemes", "steps.scheme_id", "=", "schemes.id")
     .where({scheme_id: id})
     .orderBy("steps.step_number");
+}
 
+const add = newScheme => {
+    return schemesDb("schemes")
+    .insert(newScheme)
+    .then(([id]) => findById(id));
+}
+
+const update = (changes, id) => {
+    return schemesDb("schemes")
+    .where({id: id})
+    .update(changes)
+    .then(count => (count ? findById(id) : null));
+}
+
+const remove = id => {
+    return schemesDb("schemes")
+    .where({id: id})
+    .del();
 }
 
 module.exports = {
     find: find,
     findById: findById,
-    findSteps: findSteps
+    findSteps: findSteps,
+    add: add,
+    update: update,
+    remove: remove
 }
